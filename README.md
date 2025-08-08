@@ -119,27 +119,28 @@ curl -X POST "http://localhost:8000/analyze" \
 **Response:**
 ```json
 {
-  "scenes": [
-    {
-      "start_time": 0.0,
-      "end_time": 4.0,
-      "summary": "Person walking across the street",
-      "physics": {
-        "objects": [
-          {
-            "name": "person",
-            "approx_velocity_m_s": 1.5,
-            "direction": "left-to-right",
-            "collisions": false,
-            "notes": "steady walking pace"
-          }
-        ],
-        "notes": "No significant physics events"
+  "scene_analysis": {
+    "scenes": [
+      {
+        "start_time": 0.0,
+        "end_time": 4.0,
+        "summary": "Person walking across the street",
+        "physics": {
+          "objects": [
+            {
+              "name": "person",
+              "approx_velocity_m_s": 1.5,
+              "direction": "left-to-right",
+              "collisions": false,
+              "notes": "steady walking pace"
+            }
+          ],
+          "notes": "No significant physics events"
+        }
       }
-    }
-  ],
-  "frame_analysis": {"From 0.0s to 4.0s: A person enters the frame from the left side and walks steadily across the street. The individual maintains a consistent pace of approximately 1.5 m/s with no sudden accelerations or changes in direction. No other moving objects are visible in the scene, and no collisions or interactions occur during this timeframe. The background elements remain stationary throughout the sequence."
-}
+    ]
+  },
+  "full_analysis": "From 0.0s to 4.0s: A person enters the frame from the left side and walks steadily across the street. The individual maintains a consistent pace of approximately 1.5 m/s with no sudden accelerations or changes in direction. No other moving objects are visible in the scene, and no collisions or interactions occur during this timeframe. The background elements remain stationary throughout the sequence."
 }
 ```
 

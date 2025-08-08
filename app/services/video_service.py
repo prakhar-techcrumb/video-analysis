@@ -63,11 +63,11 @@ async def analyze_video(request: AnalyzeRequest) -> AnalyzeResponse:
         
         # Create response with both structured scenes and original analysis
         response_data = {
-            "scenes": structured_data.get("scenes", []),
-            "frame_analysis": analysis_text
+            "scene_analysis": structured_data,  # This already contains the {"scenes": [...]} structure
+            "full_analysis": analysis_text
         }
         response = AnalyzeResponse(**response_data)
-        logger.info(f"Analysis completed successfully with {len(response.scenes)} scenes")
+        logger.info(f"Analysis completed successfully with {len(response.scene_analysis.scenes)} scenes")
         return response
         
     except Exception as e:

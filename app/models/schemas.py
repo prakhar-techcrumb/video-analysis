@@ -32,10 +32,15 @@ class Scene(BaseModel):
     physics: Physics = Field(..., description="Physics information for the scene")
 
 
+class SceneAnalysis(BaseModel):
+    """Scene analysis wrapper containing the scenes array."""
+    scenes: List[Scene] = Field(..., description="List of analyzed scenes")
+
+
 class AnalyzeResponse(BaseModel):
     """Response model for video analysis."""
-    scenes: List[Scene] = Field(..., description="List of analyzed scenes")
-    frame_analysis: str = Field(..., description="Original detailed frame analysis from LLM")
+    scene_analysis: SceneAnalysis = Field(..., description="Structured scene analysis with scenes array")
+    full_analysis: str = Field(..., description="Complete detailed frame analysis from LLM")
 
 
 class ErrorResponse(BaseModel):
