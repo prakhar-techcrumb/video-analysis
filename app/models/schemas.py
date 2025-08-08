@@ -1,12 +1,29 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from .callback_dto import CallbackDTO
+
+
+class CallbackPayload(BaseModel):
+    """Callback configuration for post-processing notifications."""
+    url: str = Field(..., description="Callback URL to send the results to")
+    method: str = Field(default="POST", description="HTTP method (GET, POST, PUT)")
+    headers: Optional[Dict[str, str]] = Field(default_factory=dict, description="Additional headers for the callback request")
+    
+    def to_dto(self) -> CallbackDTO:
+        """Convert to CallbackDTO for processing."""
+        return CallbackDTO(
+            url=self.url,
+            method=self.method,
+            headers=self.headers or {}
+        )
 
 
 class AnalyzeRequest(BaseModel):
     """Request model for video analysis."""
-    video_url: str = Field(..., description="Direct video URL (mp4, avi, mkv, mov, webm, etc.)")
+    videoUrl: str = Field(..., description="Direct video URL (mp4, avi, mkv, mov, webm, etc.)")
     frame_interval_seconds: float = Field(default=2.0, gt=0, le=10, description="Interval between frame extractions")
     max_frames: int = Field(default=200, gt=0, le=500, description="Maximum number of frames to extract")
+    callback_payload: Optional[List[CallbackPayload]] = Field(default_factory=list, description="List of callback configurations")
 
 
 class PhysicsObject(BaseModel):
@@ -39,8 +56,8 @@ class SceneAnalysis(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     """Response model for video analysis."""
-    scene_analysis: SceneAnalysis = Field(..., description="Structured scene analysis with scenes array")
-    full_analysis: str = Field(..., description="Complete detailed frame analysis from LLM")
+    sceneExplanation: SceneAnalysis = Field(..., description="Structured scene analysis with scenes array")
+    fullNarrative: str = Field(..., description="Complete detailed frame analysis from LLM")
 
 
 class ErrorResponse(BaseModel):

@@ -8,3 +8,4 @@ langsmith
 python-dotenv
 requests
 aiofiles
+typing_extensions

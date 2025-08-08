@@ -4,7 +4,7 @@ A production-ready FastAPI application that analyzes videos using LLMs```bash
 curl -X POST "http://localhost:8000/analyze" \
   -H "Content-Type: application/json" \
   -d '{
-    "video_url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
     "frame_interval_seconds": 2,
     "max_frames": 120
   }'act detailed scene information and physics data. The system downloads videos (YouTube or direct URLs), extracts frames at configurable intervals, and uses GPT-4o for comprehensive analysis with LangSmith monitoring.
@@ -95,31 +95,80 @@ docker run -p 8000:8000 --env-file .env video-analyzer
 
 ### Analyze Video
 
-**POST** `/analyze`
+**POST** `/analyze?op_type={sync|async}`
+
+#### Synchronous Processing (op_type=sync)
+Returns results immediately:
 
 ```bash
-curl -X POST "http://localhost:8000/analyze" \
+curl -X POST "http://localhost:8000/analyze?op_type=sync" \
   -H "Content-Type: application/json" \
   -d '{
-    "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "videoUrl": "https://example.com/video.mp4",
     "frame_interval_seconds": 2,
     "max_frames": 120
+  }'
+```
+
+#### Asynchronous Processing (op_type=async) - Default
+Submits job and returns immediately, sends results to callbacks:
+
+```bash
+curl -X POST "http://localhost:8000/analyze?op_type=async" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "videoUrl": "https://example.com/video.mp4",
+    "frame_interval_seconds": 2,
+    "max_frames": 120,
+    "callback_payload": [
+      {
+        "url": "https://your-api.com/webhook",
+        "method": "POST",
+        "headers": {"Authorization": "Bearer token"}
+      }
+    ]
   }'
 ```
 
 **Request Body:**
 ```json
 {
-  "video_url": "string",
+  "videoUrl": "string",
   "frame_interval_seconds": 2,
-  "max_frames": 200
+  "max_frames": 200,
+  "callback_payload": [
+    {
+      "url": "https://your-api.com/webhook",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer your-token",
+        "Content-Type": "application/json"
+      }
+    }
+  ]
 }
 ```
 
-**Response:**
+**Parameters:**
+- `videoUrl` (required): Direct video URL (mp4, avi, mkv, mov, webm, etc.)
+- `frame_interval_seconds` (optional): Time between frame extractions (default: 2.0, max: 10.0)
+- `max_frames` (optional): Maximum frames to extract (default: 200, max: 500)
+- `callback_payload` (required for async): Array of callback configurations to notify external systems
+
+**Query Parameters:**
+- `op_type` (optional): Operation type - "sync" for immediate response, "async" for background processing (default: "async")
+
+**Callback Configuration:**
+- `url` (required): Callback URL to send results to
+- `method` (optional): HTTP method - GET, POST, or PUT (default: POST)
+- `headers` (optional): Additional headers for the callback request (including authentication tokens like Authorization: Bearer)
+
+**Responses:**
+
+#### Synchronous Response (op_type=sync):
 ```json
 {
-  "scene_analysis": {
+  "sceneExplanation": {
     "scenes": [
       {
         "start_time": 0.0,
@@ -140,17 +189,64 @@ curl -X POST "http://localhost:8000/analyze" \
       }
     ]
   },
-  "full_analysis": "From 0.0s to 4.0s: A person enters the frame from the left side and walks steadily across the street. The individual maintains a consistent pace of approximately 1.5 m/s with no sudden accelerations or changes in direction. No other moving objects are visible in the scene, and no collisions or interactions occur during this timeframe. The background elements remain stationary throughout the sequence."
+  "fullNarrative": "From 0.0s to 4.0s: A person enters the frame from the left side and walks steadily across the street. The individual maintains a consistent pace of approximately 1.5 m/s with no sudden accelerations or changes in direction. No other moving objects are visible in the scene, and no collisions or interactions occur during this timeframe. The background elements remain stationary throughout the sequence."
 }
 ```
 
-## 🧪 Testing
+#### Asynchronous Response (op_type=async):
+```json
+{
+  "status": "job submitted",
+  "message": "Video analysis started. Results will be sent to callback URLs."
+}
+```
 
-Test the API using the included test script:
+### Callback Example
+
+Example request with callbacks that will notify external systems when analysis is complete:
 
 ```bash
-# Run the test script
+curl -X POST "http://localhost:8000/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "videoUrl": "https://example.com/video.mp4",
+    "frame_interval_seconds": 2.0,
+    "max_frames": 100,
+    "callback_payload": [
+      {
+        "url": "https://your-api.com/video-analysis-complete",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer your-secret-token",
+          "X-Event-Type": "video.analysis.completed"
+        }
+      },
+      {
+        "url": "https://analytics.example.com/events",
+        "method": "PUT",
+        "headers": {
+          "API-Key": "your-analytics-key"
+        }
+      }
+    ]
+  }'
+```
+
+Each callback will receive the complete analysis response as JSON, allowing you to integrate the video analysis into your existing workflows.
+
+## 🧪 Testing
+
+Test the API using the included test scripts:
+
+```bash
+# Run the standard test script
 python test_api.py
+
+# Test callback functionality
+python test_callbacks.py
+
+# Start a local callback server for testing
+python test_callbacks.py server
 ```
 
 Or test manually with curl:
@@ -163,7 +259,7 @@ curl http://localhost:8000/health
 curl -X POST "http://localhost:8000/analyze" \
   -H "Content-Type: application/json" \
   -d '{
-    "video_url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
     "frame_interval_seconds": 2,
     "max_frames": 50
   }'

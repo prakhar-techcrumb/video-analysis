@@ -7,6 +7,7 @@ from ..models.schemas import AnalyzeRequest, AnalyzeResponse
 from ..utils.downloader import download_video, cleanup_file, cleanup_directory
 from ..utils.frames import extract_frames, cleanup_frames, get_frame_timestamps, get_video_duration
 from ..services.llm_service import analyze_frames, structure_analysis
+from ..services.callback import process_callbacks
 from ..core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ async def analyze_video(request: AnalyzeRequest) -> AnalyzeResponse:
     Returns:
         Structured analysis response
     """
-    logger.info(f"Starting video analysis for URL: {request.video_url}")
+    logger.info(f"Starting video analysis for URL: {request.videoUrl}")
     
     # Create temporary directories
     temp_base_dir = tempfile.mkdtemp(prefix="video_analyzer_")
@@ -35,7 +36,7 @@ async def analyze_video(request: AnalyzeRequest) -> AnalyzeResponse:
     try:
         # Step 1: Download video
         logger.info("Step 1: Downloading video")
-        video_path = await download_video(request.video_url, video_dir)
+        video_path = await download_video(request.videoUrl, video_dir)
         
         # Step 2: Extract frames
         logger.info("Step 2: Extracting frames")
@@ -63,11 +64,24 @@ async def analyze_video(request: AnalyzeRequest) -> AnalyzeResponse:
         
         # Create response with both structured scenes and original analysis
         response_data = {
-            "scene_analysis": structured_data,  # This already contains the {"scenes": [...]} structure
-            "full_analysis": analysis_text
+            "sceneExplanation": structured_data,  # This already contains the {"scenes": [...]} structure
+            "fullNarrative": analysis_text
         }
         response = AnalyzeResponse(**response_data)
-        logger.info(f"Analysis completed successfully with {len(response.scene_analysis.scenes)} scenes")
+        logger.info(f"Analysis completed successfully with {len(response.sceneExplanation.scenes)} scenes")
+        
+        # Step 5: Process callbacks if provided
+        if request.callback_payload:
+            logger.info(f"Processing {len(request.callback_payload)} callbacks")
+            try:
+                # Convert CallbackPayload objects to CallbackDTO
+                callback_dtos = [callback.to_dto() for callback in request.callback_payload]
+                process_callbacks(callback_dtos, response.model_dump())
+                logger.info("Callbacks processed successfully")
+            except Exception as callback_error:
+                logger.error(f"Callback processing failed: {callback_error}")
+                # Don't fail the entire request if callbacks fail
+        
         return response
         
     except Exception as e:
@@ -91,7 +105,7 @@ async def analyze_video(request: AnalyzeRequest) -> AnalyzeResponse:
             logger.warning(f"Cleanup error: {cleanup_error}")
 
 
-def validate_video_url(url: str) -> bool:
+def validate_videoUrl(url: str) -> bool:
     """
     Validate if URL looks like a valid direct video URL.
     

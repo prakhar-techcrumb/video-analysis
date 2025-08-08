@@ -6,6 +6,7 @@ from pathlib import Path
 
 from ..core.llm_client import invokeLLM, invoke_mini_llm
 from ..core.config import settings
+from ..utils.validator import validate_and_clean_scenes
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,6 @@ Provide clear time-coded notes and keep the analysis factual and detailed. Focus
         raise Exception(f"Failed to analyze frames: {e}")
 
 
-
 async def structure_analysis(analysis_text: str, video_duration: float = 10.0) -> Dict[str, Any]:
     """
     Convert text analysis to structured JSON using LLM.
@@ -200,18 +200,10 @@ Extract all scenes with their exact timing and physics information."""
         # Parse JSON
         structured_data = json.loads(json_text)
         
-        # Validate the structure
-        if not isinstance(structured_data, dict):
-            raise ValueError("LLM returned non-dict JSON")
+        # Validate and clean the structure
+        structured_data = validate_and_clean_scenes(structured_data, video_duration)
         
-        if 'scenes' not in structured_data:
-            raise ValueError("LLM response missing 'scenes' key")
-        
-        scenes = structured_data.get('scenes', [])
-        if len(scenes) == 0:
-            raise ValueError("LLM returned empty scenes array")
-        
-        logger.info(f"Successfully structured analysis into {len(scenes)} scenes")
+        logger.info(f"Successfully structured analysis into {len(structured_data.get('scenes', []))} scenes")
         return structured_data
             
     except json.JSONDecodeError as je:
