@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+aiohttp
+opencv-python-headless
+langchain
+langsmith
+python-dotenv
+requests
+aiofiles
